@@ -29,17 +29,17 @@ function toast(msg, type = 'success') {
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-const ticketId = location.pathname.split('/').pop();
+const ticketNum = new URLSearchParams(location.search).get('id');
 let currentTicket = null;
 
 // ── Render ───────────────────────────────────────────────────────────────────
 
-function renderPage(ticket, notes, emailLog) {
+function renderPage(ticket) {
   currentTicket = ticket;
 
   const container = document.getElementById('pageContainer');
   container.innerHTML = `
-    <a href="/" class="back-link">
+    <a href="index.html" class="back-link">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       Back to Dashboard
     </a>
@@ -145,7 +145,7 @@ function renderPage(ticket, notes, emailLog) {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Notes
           </div>
-          <div class="notes-list" id="notesList">${renderNotes(notes)}</div>
+          <div class="notes-list" id="notesList">${renderNotes(ticket.notes)}</div>
           <div class="form-group mb-0">
             <textarea id="noteInput" class="form-control" rows="2" placeholder="Add a note…" style="min-height:60px;"></textarea>
             <div style="margin-top:8px;display:flex;gap:8px;">
@@ -161,14 +161,14 @@ function renderPage(ticket, notes, emailLog) {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             Email Log
           </div>
-          <div class="email-log-list" id="emailLogList">${renderEmailLog(emailLog)}</div>
+          <div class="email-log-list" id="emailLogList">${renderEmailLog(ticket.email_log)}</div>
         </div>
 
       </div>
     </div>
   `;
 
-  bindDetailEvents(ticket);
+  bindDetailEvents();
 }
 
 function renderNotes(notes) {
@@ -182,7 +182,7 @@ function renderNotes(notes) {
 }
 
 function renderEmailLog(log) {
-  if (!log || log.length === 0) return '<div class="notes-empty">No emails sent yet.</div>';
+  if (!log || log.length === 0) return '<div class="notes-empty">No emails logged yet.</div>';
   return log.map(e => `
     <div class="email-log-item">
       <div class="email-log-to">To: ${escHtml(e.to_email)}</div>
@@ -194,73 +194,45 @@ function renderEmailLog(log) {
 
 // ── Events ───────────────────────────────────────────────────────────────────
 
-function bindDetailEvents(ticket) {
-  // Status change: show/hide solution box
+function bindDetailEvents() {
   document.getElementById('statusSelect').addEventListener('change', function () {
-    const wrap = document.getElementById('solutionWrap');
-    wrap.style.display = (this.value === 'resolved' || this.value === 'closed') ? '' : 'none';
+    document.getElementById('solutionWrap').style.display =
+      (this.value === 'resolved' || this.value === 'closed') ? '' : 'none';
   });
 
-  // Update status
-  document.getElementById('updateStatusBtn').addEventListener('click', async () => {
+  document.getElementById('updateStatusBtn').addEventListener('click', () => {
     const status   = document.getElementById('statusSelect').value;
     const solution = document.getElementById('solutionInput')?.value.trim() || '';
-    const btn = document.getElementById('updateStatusBtn');
-    btn.disabled = true;
-    btn.textContent = '…';
-    try {
-      const res  = await fetch(`/api/tickets/${ticket.id}/status`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, solution })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      toast('Status updated successfully.');
-      loadTicket(); // re-render
-    } catch (err) {
-      toast(`Error: ${err.message}`, 'error');
-      btn.disabled = false;
-      btn.textContent = 'Update';
-    }
+    Store.updateStatus(ticketNum, status, solution);
+    toast('Status updated successfully.');
+    loadTicket();
   });
 
-  // Add note
-  document.getElementById('addNoteBtn').addEventListener('click', async () => {
+  document.getElementById('addNoteBtn').addEventListener('click', () => {
     const note   = document.getElementById('noteInput').value.trim();
     const author = document.getElementById('noteAuthor').value.trim() || 'Support';
     if (!note) return toast('Note cannot be empty.', 'warning');
-    try {
-      const res  = await fetch(`/api/tickets/${ticket.id}/notes`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note, author })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      document.getElementById('noteInput').value = '';
-      toast('Note added.');
-      loadTicket();
-    } catch (err) {
-      toast(`Error: ${err.message}`, 'error');
-    }
+    Store.addNote(ticketNum, note, author);
+    document.getElementById('noteInput').value = '';
+    toast('Note added.');
+    loadTicket();
   });
 
-  // Open email modal
   document.getElementById('emailBtn').addEventListener('click', () => {
-    document.getElementById('emailTo').value      = ticket.requester_email;
-    document.getElementById('emailSubject').value = `Re: [${ticket.ticket_number}] ${ticket.title}`;
+    document.getElementById('emailTo').value      = currentTicket.requester_email;
+    document.getElementById('emailSubject').value = `Re: [${currentTicket.ticket_number}] ${currentTicket.title}`;
     document.getElementById('emailBody').value    = '';
     document.getElementById('emailModal').classList.add('open');
   });
 
-  // Open edit modal
   document.getElementById('editBtn').addEventListener('click', () => {
-    document.getElementById('editTitle').value      = ticket.title || '';
-    document.getElementById('editCategory').value   = ticket.category || '';
-    document.getElementById('editPriority').value   = ticket.priority || 'medium';
-    document.getElementById('editAssignedTo').value = ticket.assigned_to || '';
-    document.getElementById('editDescription').value = ticket.description || '';
-    document.getElementById('editSymptoms').value   = ticket.symptoms || '';
-    document.getElementById('editSolution').value   = ticket.solution || '';
+    document.getElementById('editTitle').value       = currentTicket.title || '';
+    document.getElementById('editCategory').value    = currentTicket.category || '';
+    document.getElementById('editPriority').value    = currentTicket.priority || 'medium';
+    document.getElementById('editAssignedTo').value  = currentTicket.assigned_to || '';
+    document.getElementById('editDescription').value = currentTicket.description || '';
+    document.getElementById('editSymptoms').value    = currentTicket.symptoms || '';
+    document.getElementById('editSolution').value    = currentTicket.solution || '';
     document.getElementById('editModal').classList.add('open');
   });
 }
@@ -276,46 +248,30 @@ document.getElementById('cancelEmailModal').addEventListener('click', () => clos
 document.getElementById('closeEditModal').addEventListener('click', () => closeModal('editModal'));
 document.getElementById('cancelEditModal').addEventListener('click', () => closeModal('editModal'));
 
-// Close modal on overlay click
 ['emailModal','editModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function (e) {
     if (e.target === this) closeModal(id);
   });
 });
 
-// Send email
-document.getElementById('sendEmailBtn').addEventListener('click', async () => {
+// Log email and open mailto: so the user can actually send it
+document.getElementById('sendEmailBtn').addEventListener('click', () => {
   const to_email = document.getElementById('emailTo').value.trim();
   const subject  = document.getElementById('emailSubject').value.trim();
   const body     = document.getElementById('emailBody').value.trim();
 
   if (!to_email || !subject || !body) return toast('All email fields are required.', 'warning');
 
-  const btn = document.getElementById('sendEmailBtn');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> Sending…`;
-
-  try {
-    const res  = await fetch(`/api/tickets/${ticketId}/email`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_email, subject, body })
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    closeModal('emailModal');
-    toast('Email sent successfully.');
-    loadTicket();
-  } catch (err) {
-    toast(`Email failed: ${err.message}`, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Email`;
-  }
+  Store.logEmail(ticketNum, to_email, subject, body);
+  closeModal('emailModal');
+  toast('Email logged. Opening your mail client…', 'success');
+  window.open(`mailto:${encodeURIComponent(to_email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  loadTicket();
 });
 
 // Save edits
-document.getElementById('saveEditBtn').addEventListener('click', async () => {
-  const body = {
+document.getElementById('saveEditBtn').addEventListener('click', () => {
+  const fields = {
     title:       document.getElementById('editTitle').value.trim(),
     category:    document.getElementById('editCategory').value,
     priority:    document.getElementById('editPriority').value,
@@ -325,41 +281,30 @@ document.getElementById('saveEditBtn').addEventListener('click', async () => {
     solution:    document.getElementById('editSolution').value.trim()
   };
 
-  const btn = document.getElementById('saveEditBtn');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
-
-  try {
-    const res  = await fetch(`/api/tickets/${ticketId}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    closeModal('editModal');
-    toast('Ticket updated.');
-    loadTicket();
-  } catch (err) {
-    toast(`Error: ${err.message}`, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save Changes';
-  }
+  Store.update(ticketNum, fields);
+  closeModal('editModal');
+  toast('Ticket updated.');
+  loadTicket();
 });
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 
-async function loadTicket() {
-  try {
-    const res  = await fetch(`/api/tickets/${ticketId}`);
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-    document.title = `${data.ticket.ticket_number} — Support Desk`;
-    renderPage(data.ticket, data.notes, data.emailLog);
-  } catch (err) {
+function loadTicket() {
+  if (!ticketNum) {
     document.getElementById('pageContainer').innerHTML =
-      `<div class="empty-state" style="padding:80px 20px;"><p style="color:var(--danger);">Error loading ticket: ${err.message}</p><a href="/" class="btn btn-secondary" style="margin-top:16px;">Back to Dashboard</a></div>`;
+      `<div class="empty-state" style="padding:80px 20px;"><p style="color:var(--danger);">No ticket ID specified.</p><a href="index.html" class="btn btn-secondary" style="margin-top:16px;">Back to Dashboard</a></div>`;
+    return;
   }
+
+  const ticket = Store.get(ticketNum);
+  if (!ticket) {
+    document.getElementById('pageContainer').innerHTML =
+      `<div class="empty-state" style="padding:80px 20px;"><p style="color:var(--danger);">Ticket not found: ${escHtml(ticketNum)}</p><a href="index.html" class="btn btn-secondary" style="margin-top:16px;">Back to Dashboard</a></div>`;
+    return;
+  }
+
+  document.title = `${ticket.ticket_number} — Support Desk`;
+  renderPage(ticket);
 }
 
 loadTicket();

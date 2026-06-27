@@ -29,14 +29,13 @@ function validate() {
   return ok;
 }
 
-// Clear invalid state on input
 ['requesterName','requesterEmail','title','description'].forEach(id => {
   document.getElementById(id).addEventListener('input', function () {
     this.classList.remove('is-invalid');
   });
 });
 
-document.getElementById('ticketForm').addEventListener('submit', async (e) => {
+document.getElementById('ticketForm').addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validate()) {
     toast('Please fill in all required fields.', 'error');
@@ -47,7 +46,7 @@ document.getElementById('ticketForm').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.innerHTML = `<span class="spinner"></span> Submitting…`;
 
-  const body = {
+  const data = {
     requester_name:  document.getElementById('requesterName').value.trim(),
     requester_email: document.getElementById('requesterEmail').value.trim(),
     title:           document.getElementById('title').value.trim(),
@@ -59,14 +58,10 @@ document.getElementById('ticketForm').addEventListener('submit', async (e) => {
   };
 
   try {
-    const res  = await fetch('/api/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await res.json();
-
-    if (!data.success) throw new Error(data.error);
-
+    const ticket = Store.create(data);
     const overlay = document.getElementById('successOverlay');
-    document.getElementById('newTicketNum').textContent = data.ticket.ticket_number;
-    document.getElementById('viewTicketBtn').href = `/ticket/${data.ticket.id}`;
+    document.getElementById('newTicketNum').textContent = ticket.ticket_number;
+    document.getElementById('viewTicketBtn').href = `ticket-detail.html?id=${ticket.ticket_number}`;
     overlay.style.display = 'flex';
   } catch (err) {
     toast(`Failed to create ticket: ${err.message}`, 'error');

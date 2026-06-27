@@ -23,6 +23,10 @@ function toast(msg, type = 'success') {
   setTimeout(() => el.remove(), 3500);
 }
 
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ── State ────────────────────────────────────────────────────────────────────
 
 let debounceTimer;
@@ -37,67 +41,45 @@ function getFilters() {
 
 // ── Stats ────────────────────────────────────────────────────────────────────
 
-async function loadStats() {
-  try {
-    const res = await fetch('/api/tickets/stats');
-    const data = await res.json();
-    if (!data.success) return;
-    const s = data.stats;
-    document.getElementById('statTotal').textContent    = s.total;
-    document.getElementById('statNew').textContent      = s.new;
-    document.getElementById('statProgress').textContent = s.in_progress;
-    document.getElementById('statResolved').textContent = s.resolved;
-    document.getElementById('statClosed').textContent   = s.closed;
-  } catch (_) {}
+function loadStats() {
+  const s = Store.stats();
+  document.getElementById('statTotal').textContent    = s.total;
+  document.getElementById('statNew').textContent      = s.new;
+  document.getElementById('statProgress').textContent = s.in_progress;
+  document.getElementById('statResolved').textContent = s.resolved;
+  document.getElementById('statClosed').textContent   = s.closed;
 }
 
 // ── Ticket table ─────────────────────────────────────────────────────────────
 
-async function loadTickets() {
-  const { search, status, priority } = getFilters();
-  const params = new URLSearchParams();
-  if (search)   params.set('search', search);
-  if (status)   params.set('status', status);
-  if (priority) params.set('priority', priority);
+function loadTickets() {
+  const filters = getFilters();
+  const tickets = Store.filter(filters);
+  const tbody   = document.getElementById('ticketTbody');
 
-  const tbody = document.getElementById('ticketTbody');
-  tbody.innerHTML = `<tr><td colspan="8"><div class="loading-page" style="min-height:80px;"><span class="spinner" style="border-color:#dce1e7;border-top-color:#1e3a5f;"></span></div></td></tr>`;
-
-  try {
-    const res  = await fetch(`/api/tickets?${params}`);
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-
-    if (data.tickets.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No tickets found.</p></div></td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = data.tickets.map(t => `
-      <tr>
-        <td><a class="ticket-link" href="/ticket/${t.id}">${t.ticket_number}</a></td>
-        <td>
-          <a class="ticket-title" href="/ticket/${t.id}" style="color:var(--text);font-weight:500;">${escHtml(t.title)}</a>
-          ${t.assigned_to ? `<div class="text-sm text-muted" style="margin-top:2px;">→ ${escHtml(t.assigned_to)}</div>` : ''}
-        </td>
-        <td>
-          <div style="font-weight:500;">${escHtml(t.requester_name)}</div>
-          <div class="text-sm text-muted">${escHtml(t.requester_email)}</div>
-        </td>
-        <td class="text-muted">${t.category || '—'}</td>
-        <td>${priorityBadge(t.priority)}</td>
-        <td>${statusBadge(t.status)}</td>
-        <td class="text-muted text-sm">${fmtDate(t.created_at)}</td>
-        <td><a href="/ticket/${t.id}" class="btn btn-secondary btn-sm">View</a></td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p style="color:var(--danger);">Error loading tickets: ${err.message}</p></div></td></tr>`;
+  if (tickets.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No tickets found.</p></div></td></tr>`;
+    return;
   }
-}
 
-function escHtml(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  tbody.innerHTML = tickets.map(t => `
+    <tr>
+      <td><a class="ticket-link" href="ticket-detail.html?id=${escHtml(t.ticket_number)}">${escHtml(t.ticket_number)}</a></td>
+      <td>
+        <a class="ticket-title" href="ticket-detail.html?id=${escHtml(t.ticket_number)}" style="color:var(--text);font-weight:500;">${escHtml(t.title)}</a>
+        ${t.assigned_to ? `<div class="text-sm text-muted" style="margin-top:2px;">→ ${escHtml(t.assigned_to)}</div>` : ''}
+      </td>
+      <td>
+        <div style="font-weight:500;">${escHtml(t.requester_name)}</div>
+        <div class="text-sm text-muted">${escHtml(t.requester_email)}</div>
+      </td>
+      <td class="text-muted">${t.category || '—'}</td>
+      <td>${priorityBadge(t.priority)}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td class="text-muted text-sm">${fmtDate(t.created_at)}</td>
+      <td><a href="ticket-detail.html?id=${escHtml(t.ticket_number)}" class="btn btn-secondary btn-sm">View</a></td>
+    </tr>
+  `).join('');
 }
 
 // ── Event bindings ────────────────────────────────────────────────────────────
