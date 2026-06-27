@@ -4,8 +4,12 @@
   "description": "Web-based IT Ticketing System",
   "main": "server.js",
   "scripts": {
-    "start": "node --use-system-ca --experimental-sqlite server.js",
+    "start": "node --experimental-sqlite server.js",
+    "start:local": "node --use-system-ca --experimental-sqlite server.js",
     "dev": "nodemon --use-system-ca --experimental-sqlite server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
   },
   "dependencies": {
     "cors": "^2.8.5",
