@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support Desk — New Ticket</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <a href="index.html" class="nav-brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    Digital Lee Consulting - Support Desk
+  </a>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">Dashboard</a>
+    <a href="reports.html" class="nav-link">Reports</a>
+    <a href="new-ticket.html" class="btn-nav active">+ New Ticket</a>
+  </div>
+</nav>
+
+<div class="page-sm">
+  <a href="index.html" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Dashboard
+  </a>
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Submit New Ticket</h1>
+      <p class="page-subtitle">Fill in the details below. A confirmation email will be sent to the requester.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <form id="ticketForm" novalidate>
+
+      <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Requester Information
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="requesterName">Name <span class="req">*</span></label>
+          <input type="text" id="requesterName" name="requester_name" class="form-control" placeholder="Full name" required>
+          <span class="form-error">Please enter the requester's name.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="requesterEmail">Email <span class="req">*</span></label>
+          <input type="email" id="requesterEmail" name="requester_email" class="form-control" placeholder="email@example.com" required>
+          <span class="form-error">Please enter a valid email address.</span>
+        </div>
+      </div>
+
+      <div style="height:1px;background:var(--border);margin:4px 0 20px;"></div>
+
+      <div class="card-title" style="border-bottom:none;padding-bottom:0;margin-bottom:16px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Ticket Details
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="title">Subject / Title <span class="req">*</span></label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="Brief description of the issue" required>
+        <span class="form-error">Please enter a subject for this ticket.</span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="category">Category</label>
+          <select id="category" name="category" class="form-control">
+            <option value="">— Select —</option>
+            <option value="Hardware">Hardware</option>
+            <option value="Software">Software</option>
+            <option value="Network">Network</option>
+            <option value="Account">Account / Access</option>
+            <option value="Email">Email</option>
+            <option value="Printer">Printer</option>
+            <option value="Request for Open Practice">Request for Open Practice</option>
+            <option value="Request for Announcement">Request for Announcement</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="priority">Priority</label>
+          <select id="priority" name="priority" class="form-control">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Description <span class="req">*</span></label>
+        <textarea id="description" name="description" class="form-control" rows="5" placeholder="Describe the issue in detail…" required style="min-height:120px;"></textarea>
+        <span class="form-error">Please describe the issue.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="symptoms">Symptoms / Error Messages</label>
+        <textarea id="symptoms" name="symptoms" class="form-control" rows="3" placeholder="What exactly are you seeing? Any error messages?"></textarea>
+        <span class="form-hint">Paste any error messages or describe what happens step by step.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="assignedTo">Assigned To</label>
+        <input type="text" id="assignedTo" name="assigned_to" class="form-control" placeholder="Technician name (optional)">
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Submit Ticket
+        </button>
+        <a href="index.html" class="btn btn-secondary btn-lg">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Success overlay -->
+<div id="successOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:500;padding:20px;">
+  <div style="background:#fff;border-radius:12px;padding:40px;max-width:420px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="width:60px;height:60px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#065f46" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h2 style="color:#1e3a5f;margin-bottom:8px;">Ticket Created!</h2>
+    <p style="color:#7f8c8d;margin-bottom:4px;">Your ticket number is:</p>
+    <div style="font-family:monospace;font-size:22px;font-weight:800;color:#1e3a5f;background:#f0f2f5;padding:12px 20px;border-radius:6px;margin:12px 0 20px;letter-spacing:1px;" id="newTicketNum">—</div>
+    <p style="color:#7f8c8d;font-size:14px;margin-bottom:24px;">A confirmation email has been sent to the requester.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <a id="viewTicketBtn" href="#" class="btn btn-primary">View Ticket</a>
+      <button onclick="window.location.href='new-ticket.html'" class="btn btn-secondary">New Ticket</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/store.js"></script>
+<script src="js/new-ticket.js"></script>
+</body>
+</html>
